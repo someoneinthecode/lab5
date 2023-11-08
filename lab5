@@ -1,0 +1,116 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Product
+{
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public string Description { get; set; }
+    public string Category { get; set; }
+}
+
+class Order
+{
+    public List<Product> Products { get; set; }
+    public List<int> Quantities { get; set; }
+    public decimal TotalPrice => Products.Zip(Quantities, (p, q) => p.Price * q).Sum();
+    public string Status { get; set; }
+}
+
+interface ISearchable
+{
+    List<Product> SearchByPriceRange(decimal minPrice, decimal maxPrice);
+    List<Product> SearchByCategory(string category);
+}
+
+class User
+{
+    public string Username { get; set; }
+    public string Password { get; set; }
+    public List<Order> OrderHistory { get; set; }
+}
+
+class Store : ISearchable
+{
+    private List<User> users = new List<User>();
+    private List<Product> products = new List<Product>();
+    private List<Order> orders = new List<Order>();
+
+    public void AddUser(User user)
+    {
+        users.Add(user);
+    }
+
+    public void AddProduct(Product product)
+    {
+        products.Add(product);
+    }
+
+    public void CreateOrder(User user, List<Product> selectedProducts, List<int> quantities)
+    {
+        if (user == null || selectedProducts.Count != quantities.Count)
+        {
+            Console.WriteLine("Помилка: неможливо створити замовлення.");
+            return;
+        }
+
+        var order = new Order
+        {
+            Products = selectedProducts,
+            Quantities = quantities,
+            Status = "Нове"
+        };
+
+        user.OrderHistory.Add(order);
+        orders.Add(order);
+    }
+
+    public List<Product> SearchByPriceRange(decimal minPrice, decimal maxPrice)
+    {
+        return products.Where(p => p.Price >= minPrice && p.Price <= maxPrice).ToList();
+    }
+
+    public List<Product> SearchByCategory(string category)
+    {
+        return products.Where(p => p.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+
+        Store store = new Store();
+
+        User user1 = new User { Username = "user1", Password = "password1", OrderHistory = new List<Order>() };
+        User user2 = new User { Username = "user2", Password = "password2", OrderHistory = new List<Order>() };
+
+        store.AddUser(user1);
+        store.AddUser(user2);
+
+        Product product1 = new Product { Name = "Товар1", Price = 100, Description = "Опис товару 1", Category = "Категорія1" };
+        Product product2 = new Product { Name = "Товар2", Price = 200, Description = "Опис товару 2", Category = "Категорія2" };
+
+        store.AddProduct(product1);
+        store.AddProduct(product2);
+
+        List<Product> selectedProducts = new List<Product> { product1, product2 };
+        List<int> quantities = new List<int> { 2, 1 };
+
+        store.CreateOrder(user1, selectedProducts, quantities);
+
+        Console.WriteLine("Замовлення користувача " + user1.Username);
+        foreach (var order in user1.OrderHistory)
+        {
+            Console.WriteLine("Статус: " + order.Status);
+            Console.WriteLine("Загальна вартість: " + order.TotalPrice);
+            Console.WriteLine("Товари у замовленні:");
+            for (int i = 0; i < order.Products.Count; i++)
+            {
+                Console.WriteLine($"{order.Products[i].Name} x{order.Quantities[i]}");
+            }
+        }
+    }
+}
